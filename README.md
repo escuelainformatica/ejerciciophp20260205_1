@@ -1,3 +1,17 @@
+# Ejercicio 2026-02-05
+
+Cree un proyecto para listar e insertar una Compañia
+
+La compañia (Compania) tiene los siguientes campos:
+
+* Id
+* Nombre
+* Direccion
+
+Use el siguiente ejemplo de guia:
+
+
+
 # Pasos
 
 * SRP Responsabilidad de principio simple.
