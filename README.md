@@ -1,6 +1,15 @@
+# ejercicio 2026-02-12
+
+Agregar autenticacion al sistema actual
+
 # Ejercicio 2026-02-10
 
 En el proyecto anterior, agregue validacion del formulario (usando una clase de validación)
+
+* login
+* logout
+* enrutamiento
+* y crear usuario
 
 
 
