@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Libro;
 use App\Repo\LibroRepo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\LibroPostRequest;
+use Illuminate\Validation\ValidationException;
 
 class LibroController extends Controller
 {
@@ -45,5 +48,33 @@ class LibroController extends Controller
         $libro->id=$id;
         LibroRepo::actualizar($libro);
         return view("libro.formulario",['libro'=>$libro,'mensaje'=>'actualizado correctamente']);
+    }
+
+    public function login(Request $request) {
+        $usuario=new User($request->old());
+        return view("login",['usuario'=>$usuario,'mensaje'=>'']);
+    }
+    public function loginPost(Request $request) {
+        $usuario = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt($usuario, $request->boolean('remember'))) { // , $request->boolean('remember')
+            $request->session()->regenerate();
+
+            return redirect()->intended('/libro'); // Redirects to the intended URL or the home page
+        }
+        $usuario=new User($usuario);
+        // Si el usuario es valido, debo fijar la sesion y redireccion a cualquier otra pagina.
+        return view("login",['usuario'=>$usuario,'mensaje'=>'usuario o clave no valido']);
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout(); // Logs out the user by clearing their session
+        $request->session()->invalidate(); // Invalidates all session data
+        $request->session()->regenerateToken(); // Regenerates the CSRF token for security
+        return redirect('/login'); // Redirects the user to the login page
     }
 }

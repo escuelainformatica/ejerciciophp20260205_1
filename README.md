@@ -233,3 +233,152 @@ Si falla la operacion con error 403 (autorizacion), en la clase LibroPostRequest
         return true;
     }
 ```
+
+# Autenticacion
+
+Para la autenticación, se pueden usar dos middleware: auth (para sesiones) y sanctum (para API)
+Se pueden crear otros middleware.
+
+## Crear usuario
+
+Para crear un usuario de ejemplo, es recomendable usar el tinker
+
+```bash
+php artisan tinker
+```
+
+y luego ejecutar
+```php
+$user = new App\Models\User();
+$user->name = 'John Doe';
+$user->email = 'john@example.com';
+$user->password = Hash::make('abc.123');
+$user->save();
+```
+
+En el mismo tinker se puede listar los usuarios creados con el siguiente comando
+
+```php
+\App\Models\User::all()
+```
+
+Para crear un usuario definitivo, puede hacer con el seeder.
+
+En el archivo de seeder, agregar lo siguiente:
+
+```php
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => Hash::make('abc.123')
+        ]);
+```
+
+## Usando auth como middleware
+
+Los middleware se asignan en el archivo de enrutación (en este caso web.php)
+
+* En una de las rutas, se debe asignar un nombre llamado "login"
+
+```php
+Route::get('/login', [LibroController::class,"login"])->name("login");
+Route::post('/login', [LibroController::class,"loginPost"]);
+```
+
+* Indicar las rutas que requieren autenticación
+
+```php
+Route::get('/libro', [LibroController::class,"listar"])->middleware("auth");
+```
+Si la ruta indicada no tiene autenticación, entonces el sistema redireccion a la pagina "named" login.
+
+> Si es una API, hay que usar el middleware sanctum.
+
+## Crear una ruta de login.
+
+En el controlador, agregar las siguientes funciones
+
+```php
+    public function login(Request $request) {
+        $usuario=new User($request->old());
+        return view("login",['usuario'=>$usuario,'mensaje'=>'']);
+    }
+    public function loginPost(Request $request) {
+        $usuario = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt($usuario, $request->boolean('remember'))) { // , $request->boolean('remember')
+            $request->session()->regenerate();
+
+            return redirect()->intended('/libro'); // Redirects to the intended URL or the home page
+        }
+        $usuario=new User($usuario);
+        // Si el usuario es valido, debo fijar la sesion y redireccion a cualquier otra pagina.
+        return view("login",['usuario'=>$usuario,'mensaje'=>'usuario o clave no valido']);
+    }
+}
+```
+Y agregar la siguiente vista
+
+```php
+<form method="post">
+    @csrf
+    email:<input type="text" name="email" value="{{ $usuario->email }}"/><br/>
+    @error("email")
+    <div style="color:red">{{ $message }}</div>
+    @enderror
+    password:<input type="password" name="password" value=""/><br/>
+    @error("password")
+    <div style="color:red">{{ $message }}</div>
+    @enderror
+    Recordar clave <input type="checkbox" value="1" name="remember"/><br/>
+    <button type="submit" name="boton">Login</button><br/>
+    <div style="color:red">{{ $mensaje }}</div>
+</form>
+```
+
+## logout
+
+En el enrutamiento, agregar la siguiente ruta
+
+```php
+Route::get('/logout', [LibroController::class,"logout"])->middleware("auth")->name("logout");
+```
+
+En el controlador, agregar la funcion de logout
+
+```php
+    public function logout(Request $request)
+    {
+        Auth::logout(); // Logs out the user by clearing their session
+        $request->session()->invalidate(); // Invalidates all session data
+        $request->session()->regenerateToken(); // Regenerates the CSRF token for security
+        return redirect('/login'); // Redirects the user to the login page
+    }
+```
+
+## mostrar el usuario
+
+Para ver el usuario (en la vista), puede usar el siguiente codigo
+
+```php
+<div>{{ Auth::user()->name }}, {{ Auth::user()->email }}</div>
+```
+
+Para obtener el usuario (en el controlador), puede usar el siguiente codigo
+
+```php
+  $usuarioActual= Auth::user()->name;
+```
+## mostrar condicionalmente si el usuario esta logeado o no
+
+En la vista
+```php
+if(Auth::check())
+   mostrar datos si el usuario este logeado
+@else
+   mostrar un mensaje indicando que el usuario no esta logeado
+@endif
+```

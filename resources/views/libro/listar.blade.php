@@ -1,3 +1,5 @@
+@if(Auth::check())
+<div>{{ Auth::user()->name }}, {{ Auth::user()->email }} <a href="/logout">logout</a></div>
 <div>
     <!-- Walk as if you are kissing the Earth with your feet. - Thich Nhat Hanh -->
      <table>
@@ -25,3 +27,6 @@
         </tbody>
      </table>
 </div>
+@else
+   <div style="color:red">Usuario no ha ingresado sesión</div>
+@endif
